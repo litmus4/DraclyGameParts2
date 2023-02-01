@@ -5,6 +5,8 @@
 #include "DirectXMath.h"
 #include "Xinput.h"
 
+using namespace DirectX;
+
 class PscHero12
 {
 public:
@@ -27,7 +29,10 @@ private:
 	//
 	
 	//欧拉角
-	float m_fYaw;
-	float m_fPitch;
-	float m_fRoll;
+	//float m_fYaw;
+	//float m_fPitch;
+	//float m_fRoll;
+	//旋转向量
+	XMFLOAT3 m_v3Front;
+	XMFLOAT3 m_v3Right;
 };

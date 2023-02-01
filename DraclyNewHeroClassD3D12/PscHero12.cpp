@@ -1,9 +1,11 @@
 #include "PscHero12.h"
 
 PscHero12::PscHero12()
-	: /*m_pRenderer(nullptr), */m_fYaw(0.0f), m_fPitch(0.0f), m_fRoll(0.0f)
+	//: m_pRenderer(nullptr)
+	//, m_fYaw(0.0f), m_fPitch(0.0f), m_fRoll(0.0f)
 {
-	//
+	m_v3Front = XMFLOAT3(0.0f, 0.0f, -1.0f);
+	m_v3Right = XMFLOAT3(-1.0f, 0.0f, 0.0f);
 }
 
 PscHero12::~PscHero12()
@@ -17,7 +19,7 @@ PscHero12::~PscHero12()
 
 HRESULT PscHero12::Init(HWND hWnd, HINSTANCE hInst)
 {
-	//FLAGJK
+	//
 
 	return S_OK;
 }
@@ -31,7 +33,19 @@ HRESULT PscHero12::Load()
 
 void PscHero12::Update()
 {
-	//
+	XMVECTOR&& vFront = DirectX::XMLoadFloat3(&m_v3Front);
+	XMVECTOR&& vRight = DirectX::XMLoadFloat3(&m_v3Right);
+	XMVECTOR&& vUp = DirectX::XMVector3Cross(vFront, vRight);
+	vFront = DirectX::XMVector3Normalize(vFront);
+	vRight = DirectX::XMVector3Normalize(vRight);
+	vUp = DirectX::XMVector3Normalize(vUp);
+	//FLAGJK 如果vFront·vRight不大概为0，则利用Cross把vRight弄的与vFront垂直
+	XMMATRIX&& matRot = XMMatrixSet(
+		DirectX::XMVectorGetX(vRight), DirectX::XMVectorGetY(vRight), DirectX::XMVectorGetZ(vRight), 0.0f,
+		DirectX::XMVectorGetX(vUp), DirectX::XMVectorGetY(vUp), DirectX::XMVectorGetZ(vUp), 0.0f,
+		DirectX::XMVectorGetX(vFront), DirectX::XMVectorGetY(vFront), DirectX::XMVectorGetZ(vFront), 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
 }
 
 HRESULT PscHero12::Render()
