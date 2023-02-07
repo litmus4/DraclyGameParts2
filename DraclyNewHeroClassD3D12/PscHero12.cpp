@@ -1,25 +1,29 @@
 #include "PscHero12.h"
+#include "XcReadyRenderer.h"
 
 PscHero12::PscHero12()
-	//: m_pRenderer(nullptr)
+	: m_pRenderer(nullptr)
 	//, m_fYaw(0.0f), m_fPitch(0.0f), m_fRoll(0.0f)
 {
-	m_v3Front = XMFLOAT3(0.0f, 0.0f, -1.0f);
-	m_v3Right = XMFLOAT3(-1.0f, 0.0f, 0.0f);
+	XMFLOAT3 v3Front(0.0f, 0.0f, -1.0f);
+	m_vFront = DirectX::XMLoadFloat3(&v3Front);
+	XMFLOAT3 v3Right(-1.0f, 0.0f, 0.0f);
+	m_vRight = DirectX::XMLoadFloat3(&v3Right);
 }
 
 PscHero12::~PscHero12()
 {
-	//if (m_pRenderer)
-	//{
-	//	delete m_pRenderer;
-	//	m_pRenderer = nullptr;
-	//}
+	if (m_pRenderer)
+	{
+		delete m_pRenderer;
+		m_pRenderer = nullptr;
+	}
 }
 
 HRESULT PscHero12::Init(HWND hWnd, HINSTANCE hInst)
 {
-	//
+	m_pRenderer = new XcReadyRenderer();
+	m_pRenderer->InitPipeline(hWnd);
 
 	return S_OK;
 }
@@ -33,17 +37,31 @@ HRESULT PscHero12::Load()
 
 void PscHero12::Update()
 {
-	XMVECTOR&& vFront = DirectX::XMLoadFloat3(&m_v3Front);
-	XMVECTOR&& vRight = DirectX::XMLoadFloat3(&m_v3Right);
-	XMVECTOR&& vUp = DirectX::XMVector3Cross(vFront, vRight);
-	vFront = DirectX::XMVector3Normalize(vFront);
-	vRight = DirectX::XMVector3Normalize(vRight);
+	float fRotX = 0.0f, fRotY = 0.0f, fRotZ = 0.0f;
+	//
+	XMFLOAT3 v3AxisX(1.0f, 0.0f, 0.0f);
+	XMVECTOR vAxisX = DirectX::XMLoadFloat3(&v3AxisX);
+	XMFLOAT3 v3AxisY(0.0f, 1.0f, 0.0f);
+	XMVECTOR vAxisY = DirectX::XMLoadFloat3(&v3AxisY);
+	XMFLOAT3 v3AxisZ(0.0f, 0.0f, 1.0f);
+	XMVECTOR vAxisZ = DirectX::XMLoadFloat3(&v3AxisZ);
+	RotateVector3(m_vFront, vAxisX, fRotX);
+	RotateVector3(m_vFront, vAxisY, fRotY);
+	RotateVector3(m_vFront, vAxisZ, fRotZ);
+	RotateVector3(m_vRight, vAxisX, fRotX);
+	RotateVector3(m_vRight, vAxisY, fRotY);
+	RotateVector3(m_vRight, vAxisZ, fRotZ);
+	
+	XMVECTOR&& vUp = DirectX::XMVector3Cross(m_vFront, m_vRight);
+	m_vFront = DirectX::XMVector3Normalize(m_vFront);
+	m_vRight = DirectX::XMVector3Normalize(m_vRight);
 	vUp = DirectX::XMVector3Normalize(vUp);
-	//FLAGJK 如果vFront·vRight不大概为0，则利用Cross把vRight弄的与vFront垂直
-	XMMATRIX&& matRot = XMMatrixSet(
-		DirectX::XMVectorGetX(vRight), DirectX::XMVectorGetY(vRight), DirectX::XMVectorGetZ(vRight), 0.0f,
+	if (fabs(DirectX::XMVector3Dot(m_vFront, m_vRight).m128_f32[0]) > 0.000001f)
+		m_vRight = DirectX::XMVector3Cross(vUp, m_vFront);
+	XMMATRIX&& matWorld = XMMatrixSet(
+		DirectX::XMVectorGetX(m_vRight), DirectX::XMVectorGetY(m_vRight), DirectX::XMVectorGetZ(m_vRight), 0.0f,
 		DirectX::XMVectorGetX(vUp), DirectX::XMVectorGetY(vUp), DirectX::XMVectorGetZ(vUp), 0.0f,
-		DirectX::XMVectorGetX(vFront), DirectX::XMVectorGetY(vFront), DirectX::XMVectorGetZ(vFront), 0.0f,
+		DirectX::XMVectorGetX(m_vFront), DirectX::XMVectorGetY(m_vFront), DirectX::XMVectorGetZ(m_vFront), 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
 }
@@ -72,4 +90,11 @@ HRESULT PscHero12::Destroy()
 void PscHero12::KbAcquire()
 {
 	//
+}
+
+void PscHero12::RotateVector3(XMVECTOR& v, const XMVECTOR& vAxis, float fAngle)
+{
+	if (fabs(fAngle) < 0.000001f)
+		return;
+	v = DirectX::XMVector3Rotate(v, DirectX::XMQuaternionRotationAxis(vAxis, fAngle));
 }

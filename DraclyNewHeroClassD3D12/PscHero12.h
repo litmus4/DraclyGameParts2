@@ -7,6 +7,8 @@
 
 using namespace DirectX;
 
+class XcReadyRenderer;
+
 class PscHero12
 {
 public:
@@ -22,8 +24,10 @@ public:
 	void KbAcquire();
 
 private:
+	void RotateVector3(XMVECTOR& v, const XMVECTOR& vAxis, float fAngle);
+
 	//äÖÈ¾Æ÷
-	//XcReadyRenderer* m_pRenderer;
+	XcReadyRenderer* m_pRenderer;
 	
 	//XInput
 	//
@@ -33,6 +37,6 @@ private:
 	//float m_fPitch;
 	//float m_fRoll;
 	//Ðý×ªÏòÁ¿
-	XMFLOAT3 m_v3Front;
-	XMFLOAT3 m_v3Right;
+	XMVECTOR m_vFront;
+	XMVECTOR m_vRight;
 };
