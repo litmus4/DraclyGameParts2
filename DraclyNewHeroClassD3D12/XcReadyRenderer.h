@@ -19,4 +19,5 @@ public:
 
 private:
 	ComPtr<ID3D12Device> m_pDevice;
+	ComPtr<ID3D12CommandQueue> m_pCommandQueue;
 };
