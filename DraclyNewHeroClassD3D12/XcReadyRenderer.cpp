@@ -17,11 +17,11 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&pFactory))))
 		return E_FAIL;
 
-	IDXGIAdapter* pAdapter = nullptr;
+	IDXGIAdapter1* pAdapter = nullptr;
 	UINT u = 0;
 	DXGI_MODE_DESC dMDesc;
 	dMDesc.Width = 0;
-	while (pFactory->EnumAdapters(u, &pAdapter) != DXGI_ERROR_NOT_FOUND)
+	while (pFactory->EnumAdapters1(u, &pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC dADesc;
 		pAdapter->GetDesc(&dADesc);
