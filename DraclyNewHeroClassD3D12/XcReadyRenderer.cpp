@@ -1,7 +1,12 @@
 #include "XcReadyRenderer.h"
 #include <string>
 
+#define VIEW_WIDTH 1280
+#define VIEW_HEIGHT 720
+
 XcReadyRenderer::XcReadyRenderer()
+	: m_uRtvDescriptorSize(0)
+	, m_uFrameIndex(0)
 {
 	//
 }
@@ -39,10 +44,10 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 				//pOutput->GetDesc(&dODesc);
 
 				UINT uModeNum = 0;
-				pOutput->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM, 0, &uModeNum, nullptr);
+				pOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &uModeNum, nullptr);
 
 				DXGI_MODE_DESC* pdMDescs = new DXGI_MODE_DESC[uModeNum];
-				pOutput->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM, 0, &uModeNum, pdMDescs);
+				pOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &uModeNum, pdMDescs);
 
 				for (UINT w = 0; w < uModeNum; ++w)
 				{
@@ -77,5 +82,45 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	if (FAILED(m_pDevice->CreateCommandQueue(&CqDesc, IID_PPV_ARGS(&m_pCommandQueue))))
 		return E_FAIL;
 
-	//FLAGJK
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS FdMsaaQ;
+	FdMsaaQ.Format = dMDesc.Format;
+	FdMsaaQ.SampleCount = 4;
+	FdMsaaQ.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+	FdMsaaQ.NumQualityLevels = 0;
+	if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &FdMsaaQ, sizeof(FdMsaaQ))))
+		return E_FAIL;
+
+	DXGI_SWAP_CHAIN_DESC ScDesc = {};
+	ScDesc.BufferDesc = dMDesc;
+	ScDesc.BufferDesc.Width = VIEW_WIDTH;
+	ScDesc.BufferDesc.Height = VIEW_HEIGHT;
+	//ScDesc.BufferDesc.RefreshRate.Numerator = 60;
+	//ScDesc.BufferDesc.RefreshRate.Denominator = 1;
+	//ScDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	ScDesc.SampleDesc.Count = (FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
+	ScDesc.SampleDesc.Quality = (FdMsaaQ.NumQualityLevels > 0 ? FdMsaaQ.NumQualityLevels - 1 : 0);
+	ScDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	ScDesc.BufferCount = FRAME_COUNT;
+	ScDesc.OutputWindow = hWnd;
+	ScDesc.Windowed = true;
+	ScDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	ScDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	ComPtr<IDXGISwapChain> pSwapChain;
+	if (FAILED(pFactory->CreateSwapChain(m_pCommandQueue.Get(), &ScDesc, &pSwapChain)))//FLAGJK
+		return E_FAIL;
+	if (FAILED(pSwapChain.As(&m_pSwapChain)))
+		return E_FAIL;
+	m_uFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+
+	D3D12_DESCRIPTOR_HEAP_DESC RtvHDesc = {};
+	RtvHDesc.NumDescriptors = FRAME_COUNT;
+	RtvHDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	RtvHDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	if (FAILED(m_pDevice->CreateDescriptorHeap(&RtvHDesc, IID_PPV_ARGS(&m_pRtvHeap))))
+		return E_FAIL;
+	m_uRtvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE
 }

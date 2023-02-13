@@ -6,6 +6,8 @@
 //#include "d3dx12.h"
 #include "DirectXMath.h"
 
+#define FRAME_COUNT 2
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 
@@ -19,5 +21,11 @@ public:
 
 private:
 	ComPtr<ID3D12Device> m_pDevice;
+	ComPtr<IDXGISwapChain3> m_pSwapChain;
 	ComPtr<ID3D12CommandQueue> m_pCommandQueue;
+	ComPtr<ID3D12DescriptorHeap> m_pRtvHeap;
+	UINT m_uRtvDescriptorSize;
+
+	UINT m_uFrameIndex;
+	//
 };
