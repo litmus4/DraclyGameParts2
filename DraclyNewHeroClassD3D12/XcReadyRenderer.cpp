@@ -1,4 +1,5 @@
 #include "XcReadyRenderer.h"
+#include "d3dx12.h"
 #include <string>
 
 #define VIEW_WIDTH 1280
@@ -18,8 +19,20 @@ XcReadyRenderer::~XcReadyRenderer()
 
 HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 {
+	UINT uDxgiFactoryFlags = 0;
+
+#ifdef _DEBUG
+	ComPtr<ID3D12Debug> pDebug;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
+	{
+		pDebug->EnableDebugLayer();
+
+		uDxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+	}
+#endif
+
 	ComPtr<IDXGIFactory4> pFactory;
-	if (FAILED(CreateDXGIFactory2(0, IID_PPV_ARGS(&pFactory))))
+	if (FAILED(CreateDXGIFactory2(uDxgiFactoryFlags, IID_PPV_ARGS(&pFactory))))
 		return E_FAIL;
 
 	IDXGIAdapter1* pAdapter = nullptr;
@@ -82,6 +95,7 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	if (FAILED(m_pDevice->CreateCommandQueue(&CqDesc, IID_PPV_ARGS(&m_pCommandQueue))))
 		return E_FAIL;
 
+#if MSAA
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS FdMsaaQ;
 	FdMsaaQ.Format = dMDesc.Format;
 	FdMsaaQ.SampleCount = 4;
@@ -89,6 +103,7 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	FdMsaaQ.NumQualityLevels = 0;
 	if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &FdMsaaQ, sizeof(FdMsaaQ))))
 		return E_FAIL;
+#endif
 
 	DXGI_SWAP_CHAIN_DESC ScDesc = {};
 	ScDesc.BufferDesc = dMDesc;
@@ -97,8 +112,13 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	//ScDesc.BufferDesc.RefreshRate.Numerator = 60;
 	//ScDesc.BufferDesc.RefreshRate.Denominator = 1;
 	//ScDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+#if MSAA
 	ScDesc.SampleDesc.Count = (FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
 	ScDesc.SampleDesc.Quality = (FdMsaaQ.NumQualityLevels > 0 ? FdMsaaQ.NumQualityLevels - 1 : 0);
+#else
+	ScDesc.SampleDesc.Count = 1;
+	ScDesc.SampleDesc.Quality = 0;
+#endif
 	ScDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	ScDesc.BufferCount = FRAME_COUNT;
 	ScDesc.OutputWindow = hWnd;
@@ -107,7 +127,7 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	ScDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	ComPtr<IDXGISwapChain> pSwapChain;
-	if (FAILED(pFactory->CreateSwapChain(m_pCommandQueue.Get(), &ScDesc, &pSwapChain)))//FLAGJK
+	if (FAILED(pFactory->CreateSwapChain(m_pCommandQueue.Get(), &ScDesc, &pSwapChain)))
 		return E_FAIL;
 	if (FAILED(pSwapChain.As(&m_pSwapChain)))
 		return E_FAIL;
@@ -122,5 +142,19 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 		return E_FAIL;
 	m_uRtvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	//CD3DX12_CPU_DESCRIPTOR_HANDLE
+	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle(m_pRtvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (u = 0; u < FRAME_COUNT; ++u)
+	{
+		if (FAILED(m_pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_pCommandAllocators[u]))))
+			return E_FAIL;
+
+		if (FAILED(m_pSwapChain->GetBuffer(u, IID_PPV_ARGS(&m_pRenderTargets[u]))))
+			return E_FAIL;
+		m_pDevice->CreateRenderTargetView(m_pRenderTargets[u].Get(), nullptr, RtvHandle);
+		RtvHandle.Offset(1, m_uRtvDescriptorSize);
+	}
+
+	return S_OK;
 }
+
+//FLAGJK
