@@ -7,6 +7,7 @@
 
 XcReadyRenderer::XcReadyRenderer()
 	: m_uRtvDescriptorSize(0)
+	, m_uDsvDescriptorSize(0)
 	, m_uFrameIndex(0)
 {
 	//
@@ -154,7 +155,60 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 		RtvHandle.Offset(1, m_uRtvDescriptorSize);
 	}
 
+	D3D12_DESCRIPTOR_HEAP_DESC DsvHDesc = {};
+	DsvHDesc.NumDescriptors = FRAME_COUNT;
+	DsvHDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	DsvHDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	if (FAILED(m_pDevice->CreateDescriptorHeap(&DsvHDesc, IID_PPV_ARGS(&m_pDsvHeap))))
+		return E_FAIL;
+	m_uDsvDescriptorSize = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	DXGI_FORMAT eDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	D3D12_RESOURCE_DESC DsDesc = {};
+	DsDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	DsDesc.Width = VIEW_WIDTH;
+	DsDesc.Height = VIEW_HEIGHT;
+	DsDesc.DepthOrArraySize = 1;
+	DsDesc.MipLevels = 1;
+	DsDesc.Format = eDepthStencilFormat;
+#if MSAA
+	DsDesc.SampleDesc.Count = (FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
+	DsDesc.SampleDesc.Quality = (FdMsaaQ.NumQualityLevels > 0 ? FdMsaaQ.NumQualityLevels - 1 : 0);
+#else
+	DsDesc.SampleDesc.Count = 1;
+	DsDesc.SampleDesc.Quality = 0;
+#endif
+	DsDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	DsDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	CD3DX12_HEAP_PROPERTIES DsHeapProp(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_CLEAR_VALUE DsClear;
+	DsClear.Format = eDepthStencilFormat;
+	DsClear.DepthStencil.Depth = 1.0f;
+	DsClear.DepthStencil.Stencil = 0;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE DsvHandle(m_pDsvHeap->GetCPUDescriptorHandleForHeapStart());
+	for (u = 0; u < FRAME_COUNT; ++u)
+	{
+		if (FAILED(m_pDevice->CreateCommittedResource(&DsHeapProp,
+				D3D12_HEAP_FLAG_NONE,
+				&DsDesc,
+				D3D12_RESOURCE_STATE_COMMON,
+				&DsClear, IID_PPV_ARGS(&m_pDepthStencils[u]))))
+			return E_FAIL;
+
+		m_pDevice->CreateDepthStencilView(m_pDepthStencils[u].Get(), nullptr, DsvHandle);
+		//CommandList ResourceBarrier D3D12_RESOURCE_STATE_COMMON->D3D12_RESOURCE_STATE_DEPTH_WRITE
+		DsvHandle.Offset(1, m_uDsvDescriptorSize);
+	}
+
 	return S_OK;
 }
 
-//FLAGJK
+HRESULT XcReadyRenderer::LoadAssets()
+{
+	//FLAGJK
+
+	return S_OK;
+}

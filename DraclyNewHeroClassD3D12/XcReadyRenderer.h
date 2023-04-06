@@ -19,6 +19,7 @@ public:
 	~XcReadyRenderer();
 
 	HRESULT InitPipeline(HWND hWnd);
+	HRESULT LoadAssets();
 
 private:
 	ComPtr<ID3D12Device> m_pDevice;
@@ -29,6 +30,9 @@ private:
 	ComPtr<ID3D12Resource> m_pRenderTargets[FRAME_COUNT];
 	ComPtr<ID3D12DescriptorHeap> m_pRtvHeap;
 	UINT m_uRtvDescriptorSize;
+	ComPtr<ID3D12Resource> m_pDepthStencils[FRAME_COUNT];
+	ComPtr<ID3D12DescriptorHeap> m_pDsvHeap;
+	UINT m_uDsvDescriptorSize;
 
 	UINT m_uFrameIndex;
 	//
