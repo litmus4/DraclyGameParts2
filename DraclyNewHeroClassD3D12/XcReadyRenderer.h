@@ -5,6 +5,14 @@
 #include "d3d12.h"
 //#include "d3dx12.h"
 #include "DirectXMath.h"
+#include <vector>
+
+#define INDEX_RECT(Vec, I1, I2, I3, I4, I5, I6) Vec.push_back(I1);\
+	Vec.push_back(I2);\
+	Vec.push_back(I3);\
+	Vec.push_back(I4);\
+	Vec.push_back(I5);\
+	Vec.push_back(I6)
 
 #define FRAME_COUNT 2
 #define MSAA 0
@@ -15,11 +23,34 @@ using namespace DirectX;
 class XcReadyRenderer
 {
 public:
+	struct SVertex
+	{
+		SVertex();
+		SVertex(float fX, float fY, float fZ,
+			float fNormX, float fNormY, float fNormZ,
+			float fU, float fV);
+
+		XMFLOAT3 v3Position;
+		XMFLOAT3 v3Normal;
+		XMFLOAT2 v2Texcoord;
+		UINT16 uIndex;
+	};
+
+	struct SMultiTexParam
+	{
+		SMultiTexParam(UINT16 uVertNum, UINT16 uIndNum);
+
+		UINT16 uVertexNum;
+		UINT16 uIndexNum;
+	};
+
+public:
 	XcReadyRenderer();
 	~XcReadyRenderer();
 
 	HRESULT InitPipeline(HWND hWnd);
-	HRESULT LoadAssets();
+	HRESULT LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
+		const std::vector<SMultiTexParam>* pvecMultiTexParams = nullptr, bool bTiangleStrip = false);//FLAGJK ²»ÐèÒªSMultiTexParam
 
 private:
 	ComPtr<ID3D12Device> m_pDevice;
@@ -33,6 +64,9 @@ private:
 	ComPtr<ID3D12Resource> m_pDepthStencils[FRAME_COUNT];
 	ComPtr<ID3D12DescriptorHeap> m_pDsvHeap;
 	UINT m_uDsvDescriptorSize;
+
+	ComPtr<ID3D12Resource> m_pVertexBuffer;
+	ComPtr<ID3D12Resource> m_pIndexBuffer;
 
 	UINT m_uFrameIndex;
 	//

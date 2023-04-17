@@ -5,6 +5,31 @@
 #define VIEW_WIDTH 1280
 #define VIEW_HEIGHT 720
 
+XcReadyRenderer::SVertex::SVertex() : uIndex(0)
+{
+	//
+}
+
+XcReadyRenderer::SVertex::SVertex(float fX, float fY, float fZ,
+	float fNormX, float fNormY, float fNormZ,
+	float fU, float fV) : uIndex(0)
+{
+	v3Position.x = fX;
+	v3Position.y = fY;
+	v3Position.z = fZ;
+	v3Normal.x = fNormX;
+	v3Normal.y = fNormY;
+	v3Normal.z = fNormZ;
+	v2Texcoord.x = fU;
+	v2Texcoord.y = fV;
+}
+
+XcReadyRenderer::SMultiTexParam::SMultiTexParam(UINT16 uVertNum, UINT16 uIndNum)
+	: uVertexNum(uVertNum), uIndexNum(uIndNum)
+{
+	//
+}
+
 XcReadyRenderer::XcReadyRenderer()
 	: m_uRtvDescriptorSize(0)
 	, m_uDsvDescriptorSize(0)
@@ -195,7 +220,8 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 				D3D12_HEAP_FLAG_NONE,
 				&DsDesc,
 				D3D12_RESOURCE_STATE_COMMON,
-				&DsClear, IID_PPV_ARGS(&m_pDepthStencils[u]))))
+				&DsClear,
+				IID_PPV_ARGS(&m_pDepthStencils[u]))))
 			return E_FAIL;
 
 		m_pDevice->CreateDepthStencilView(m_pDepthStencils[u].Get(), nullptr, DsvHandle);
@@ -206,9 +232,97 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	return S_OK;
 }
 
-HRESULT XcReadyRenderer::LoadAssets()
+HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
+	const std::vector<SMultiTexParam>* pvecMultiTexParams, bool bTiangleStrip)
 {
-	//FLAGJK
+	if (vecVertices.empty() || vecIndices.empty())
+		return E_FAIL;
+	if (pvecMultiTexParams)
+	{
+		UINT16 uVertSum = 0, uIndSum = 0;
+		std::vector<SMultiTexParam>::const_iterator itMtp = pvecMultiTexParams->begin();
+		for (; itMtp != pvecMultiTexParams->end(); itMtp++)
+		{
+			uVertSum += itMtp->uVertexNum;
+			uIndSum += itMtp->uIndexNum;
+		}
+		if (uVertSum != vecVertices.size() || uIndSum != vecIndices.size())
+			return E_FAIL;
+	}
+
+	CD3DX12_HEAP_PROPERTIES BufferHeapProp(D3D12_HEAP_TYPE_UPLOAD);
+	CD3DX12_RANGE ReadRange(0, 0);
+
+	D3D12_RESOURCE_DESC VbDesc = {};
+	VbDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	VbDesc.Width = vecVertices.size() * sizeof(SVertex);
+	VbDesc.Height = 1;
+	VbDesc.DepthOrArraySize = 1;
+	VbDesc.MipLevels = 1;
+	VbDesc.Format = DXGI_FORMAT_UNKNOWN;
+	VbDesc.SampleDesc.Count = 1;
+	VbDesc.SampleDesc.Quality = 0;
+	VbDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	VbDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	if (FAILED(m_pDevice->CreateCommittedResource(&BufferHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&VbDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_pVertexBuffer))))
+		return E_FAIL;
+
+	UINT8* pVertexBufferGPUData = nullptr;
+	if (FAILED(m_pVertexBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(&pVertexBufferGPUData))))
+		return E_FAIL;
+	SVertex* pVertexBufferData = new SVertex[vecVertices.size()];
+	std::vector<SVertex>::const_iterator itVert = vecVertices.begin();
+	int i = 0;
+	for (; itVert != vecVertices.end(); itVert++)
+	{
+		pVertexBufferData[i] = *itVert;
+		pVertexBufferData[i].uIndex = i;
+		i++;
+	}
+	memcpy(pVertexBufferGPUData, pVertexBufferData, sizeof(pVertexBufferData));
+	m_pVertexBuffer->Unmap(0, nullptr);
+
+	D3D12_RESOURCE_DESC IbDesc = {};
+	IbDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	IbDesc.Width = vecIndices.size() * sizeof(UINT16);
+	IbDesc.Height = 1;
+	IbDesc.DepthOrArraySize = 1;
+	IbDesc.MipLevels = 1;
+	IbDesc.Format = DXGI_FORMAT_UNKNOWN;//DXGI_FORMAT_R16_UINT
+	IbDesc.SampleDesc.Count = 1;
+	IbDesc.SampleDesc.Quality = 0;
+	IbDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	IbDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	if (FAILED(m_pDevice->CreateCommittedResource(&BufferHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&IbDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_pIndexBuffer))))
+		return E_FAIL;
+
+	UINT8* pIndexBufferGPUData = nullptr;
+	if (FAILED(m_pIndexBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(&pIndexBufferGPUData))))
+		return E_FAIL;
+	UINT16* pIndexBufferData = new UINT16[vecIndices.size()];
+	std::vector<UINT16>::const_iterator itInd = vecIndices.begin();
+	i = 0;
+	for (; itInd != vecIndices.end(); itInd++)
+	{
+		pIndexBufferData[i] = *itInd;
+		i++;
+	}
+	memcpy(pIndexBufferGPUData, pIndexBufferData, sizeof(pIndexBufferData));
+	m_pIndexBuffer->Unmap(0, nullptr);
+
+	//
 
 	return S_OK;
 }

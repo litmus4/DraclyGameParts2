@@ -23,14 +23,29 @@ PscHero12::~PscHero12()
 HRESULT PscHero12::Init(HWND hWnd, HINSTANCE hInst)
 {
 	m_pRenderer = new XcReadyRenderer();
-	m_pRenderer->InitPipeline(hWnd);
+	if (FAILED(m_pRenderer->InitPipeline(hWnd)))
+		return E_FAIL;
 
 	return S_OK;
 }
 
 HRESULT PscHero12::Load()
 {
+	std::vector<XcReadyRenderer::SVertex> vecVertices;
+	//前面
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f,-1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 1.0f));
 	//
+
+	std::vector<UINT16> vecIndices;
+	//前面
+	INDEX_RECT(vecIndices, 0, 1, 2, 0, 2, 3);
+	//
+
+	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices)))
+		return E_FAIL;
 
 	return S_OK;
 }
