@@ -33,15 +33,7 @@ public:
 		XMFLOAT3 v3Position;
 		XMFLOAT3 v3Normal;
 		XMFLOAT2 v2Texcoord;
-		UINT16 uIndex;
-	};
-
-	struct SMultiTexParam
-	{
-		SMultiTexParam(UINT16 uVertNum, UINT16 uIndNum);
-
-		UINT16 uVertexNum;
-		UINT16 uIndexNum;
+		UINT16 uTexIndex;
 	};
 
 public:
@@ -50,7 +42,7 @@ public:
 
 	HRESULT InitPipeline(HWND hWnd);
 	HRESULT LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
-		const std::vector<SMultiTexParam>* pvecMultiTexParams = nullptr, bool bTiangleStrip = false);//FLAGJK ²»ÐèÒªSMultiTexParam
+		const std::vector<UINT16>* pvecMultiTexVerts = nullptr, bool bTiangleStrip = false);
 
 private:
 	ComPtr<ID3D12Device> m_pDevice;

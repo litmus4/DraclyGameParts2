@@ -5,14 +5,14 @@
 #define VIEW_WIDTH 1280
 #define VIEW_HEIGHT 720
 
-XcReadyRenderer::SVertex::SVertex() : uIndex(0)
+XcReadyRenderer::SVertex::SVertex() : uTexIndex(0)
 {
 	//
 }
 
 XcReadyRenderer::SVertex::SVertex(float fX, float fY, float fZ,
 	float fNormX, float fNormY, float fNormZ,
-	float fU, float fV) : uIndex(0)
+	float fU, float fV) : uTexIndex(0)
 {
 	v3Position.x = fX;
 	v3Position.y = fY;
@@ -22,12 +22,6 @@ XcReadyRenderer::SVertex::SVertex(float fX, float fY, float fZ,
 	v3Normal.z = fNormZ;
 	v2Texcoord.x = fU;
 	v2Texcoord.y = fV;
-}
-
-XcReadyRenderer::SMultiTexParam::SMultiTexParam(UINT16 uVertNum, UINT16 uIndNum)
-	: uVertexNum(uVertNum), uIndexNum(uIndNum)
-{
-	//
 }
 
 XcReadyRenderer::XcReadyRenderer()
@@ -233,20 +227,17 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 }
 
 HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
-	const std::vector<SMultiTexParam>* pvecMultiTexParams, bool bTiangleStrip)
+	const std::vector<UINT16>* pvecMultiTexVerts, bool bTiangleStrip)
 {
 	if (vecVertices.empty() || vecIndices.empty())
 		return E_FAIL;
-	if (pvecMultiTexParams)
+	if (pvecMultiTexVerts)
 	{
-		UINT16 uVertSum = 0, uIndSum = 0;
-		std::vector<SMultiTexParam>::const_iterator itMtp = pvecMultiTexParams->begin();
-		for (; itMtp != pvecMultiTexParams->end(); itMtp++)
-		{
-			uVertSum += itMtp->uVertexNum;
-			uIndSum += itMtp->uIndexNum;
-		}
-		if (uVertSum != vecVertices.size() || uIndSum != vecIndices.size())
+		UINT16 uSum = 0;
+		std::vector<UINT16>::const_iterator itMtv = pvecMultiTexVerts->begin();
+		for (; itMtv != pvecMultiTexVerts->end(); itMtv++)
+			uSum += *itMtv;
+		if (uSum != vecVertices.size())
 			return E_FAIL;
 	}
 
@@ -278,15 +269,19 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 		return E_FAIL;
 	SVertex* pVertexBufferData = new SVertex[vecVertices.size()];
 	std::vector<SVertex>::const_iterator itVert = vecVertices.begin();
-	int i = 0;
+	int i = 0, j = 0;
+	UINT16 uSum = (pvecMultiTexVerts ? (*pvecMultiTexVerts)[j] : vecVertices.size());
 	for (; itVert != vecVertices.end(); itVert++)
 	{
 		pVertexBufferData[i] = *itVert;
-		pVertexBufferData[i].uIndex = i;
+		pVertexBufferData[i].uTexIndex = j;
 		i++;
+		if (pvecMultiTexVerts && i >= uSum && j < pvecMultiTexVerts->size() - 1)
+			uSum += (*pvecMultiTexVerts)[++j];
 	}
 	memcpy(pVertexBufferGPUData, pVertexBufferData, sizeof(pVertexBufferData));
 	m_pVertexBuffer->Unmap(0, nullptr);
+	delete[] pVertexBufferData;
 
 	D3D12_RESOURCE_DESC IbDesc = {};
 	IbDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -321,6 +316,7 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 	}
 	memcpy(pIndexBufferGPUData, pIndexBufferData, sizeof(pIndexBufferData));
 	m_pIndexBuffer->Unmap(0, nullptr);
+	delete[] pIndexBufferData;
 
 	//
 

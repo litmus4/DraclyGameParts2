@@ -33,18 +33,28 @@ HRESULT PscHero12::Load()
 {
 	std::vector<XcReadyRenderer::SVertex> vecVertices;
 	//前面
-	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 0.0f));
-	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 0.0f));
-	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 1.0f));
-	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f,-1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 1.0f));
-	//
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/0.0f, 0.0f, -1.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/0.0f, 0.0f, -1.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, -1.0f, /**/0.0f, 0.0f, -1.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f,-1.0f, -1.0f, /**/0.0f, 0.0f, -1.0f, /**/0.0f, 1.0f));
+	//顶面
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, 1.0f, /**/0.0f, 1.0f, 0.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, 1.0f, /**/0.0f, 1.0f, 0.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/0.0f, 1.0f, 0.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/0.0f, 1.0f, 0.0f, /**/0.0f, 1.0f));
+	//FLAGJK
 
 	std::vector<UINT16> vecIndices;
 	//前面
 	INDEX_RECT(vecIndices, 0, 1, 2, 0, 2, 3);
-	//
+	//顶面
+	INDEX_RECT(vecIndices, 4, 5, 6, 4, 6, 7);
 
-	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices)))
+	std::vector<UINT16> vecMultiTexVerts;
+	for (int i = 0; i < 2; ++i)
+		vecMultiTexVerts.push_back(4);
+
+	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, &vecMultiTexVerts)))
 		return E_FAIL;
 
 	return S_OK;
