@@ -42,16 +42,43 @@ HRESULT PscHero12::Load()
 	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, 1.0f, /**/0.0f, 1.0f, 0.0f, /**/1.0f, 0.0f));
 	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/0.0f, 1.0f, 0.0f, /**/1.0f, 1.0f));
 	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/0.0f, 1.0f, 0.0f, /**/0.0f, 1.0f));
-	//FLAGJK
+	//后面
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, 1.0f, /**/0.0f, 0.0f, 1.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, 1.0f, /**/0.0f, 0.0f, 1.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, -1.0f, 1.0f, /**/0.0f, 0.0f, 1.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, 1.0f, /**/0.0f, 0.0f, 1.0f, /**/0.0f, 1.0f));
+	//底面
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, 1.0f, /**/0.0f, -1.0f, 0.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, -1.0f, 1.0f, /**/0.0f, -1.0f, 0.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, -1.0f, -1.0f, /**/0.0f, -1.0f, 0.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, -1.0f, /**/0.0f, -1.0f, 0.0f, /**/0.0f, 1.0f));
+	//左面
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, 1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, 1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, -1.0f, -1.0f, /**/-1.0f, 0.0f, 0.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(-1.0f, -1.0f, 1.0f, /**/-1.0f, 0.0f, 0.0f, /**/0.0f, 1.0f));
+	//右面
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, -1.0f, /**/1.0f, 0.0f, 0.0f, /**/0.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, 1.0f, 1.0f, /**/1.0f, 0.0f, 0.0f, /**/1.0f, 0.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, 1.0f, /**/1.0f, 0.0f, 0.0f, /**/1.0f, 1.0f));
+	vecVertices.push_back(XcReadyRenderer::SVertex(1.0f, -1.0f, -1.0f, /**/1.0f, 0.0f, 0.0f, /**/0.0f, 1.0f));
 
 	std::vector<UINT16> vecIndices;
 	//前面
 	INDEX_RECT(vecIndices, 0, 1, 2, 0, 2, 3);
 	//顶面
 	INDEX_RECT(vecIndices, 4, 5, 6, 4, 6, 7);
+	//后面
+	INDEX_RECT(vecIndices, 8, 9, 10, 8, 10, 11);
+	//底面
+	INDEX_RECT(vecIndices, 12, 13, 14, 12, 14, 15);
+	//左面
+	INDEX_RECT(vecIndices, 16, 17, 18, 16, 18, 19);
+	//右面
+	INDEX_RECT(vecIndices, 20, 21, 22, 20, 22, 23);
 
 	std::vector<UINT16> vecMultiTexVerts;
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < 6; ++i)
 		vecMultiTexVerts.push_back(4);
 
 	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, &vecMultiTexVerts)))

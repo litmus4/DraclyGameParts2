@@ -5,6 +5,13 @@
 #define VIEW_WIDTH 1280
 #define VIEW_HEIGHT 720
 
+enum ECbvSrvRange
+{
+	Cbv,
+	Srv,
+	Max
+};
+
 XcReadyRenderer::SVertex::SVertex() : uTexIndex(0)
 {
 	//
@@ -318,7 +325,38 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 	m_pIndexBuffer->Unmap(0, nullptr);
 	delete[] pIndexBufferData;
 
-	//
+	//==========
+
+	CD3DX12_ROOT_PARAMETER RootParameters[1];
+
+	CD3DX12_DESCRIPTOR_RANGE CbvSrvRanges[ECbvSrvRange::Max];
+	CbvSrvRanges[ECbvSrvRange::Cbv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	CbvSrvRanges[ECbvSrvRange::Srv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0);
+	RootParameters[0].InitAsDescriptorTable(2, CbvSrvRanges);
+
+	CD3DX12_ROOT_SIGNATURE_DESC RsDesc(1, RootParameters, 0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	ComPtr<ID3DBlob> pSerializedRootSig;
+	ComPtr<ID3DBlob> pErrorBlob;
+	if (FAILED(D3D12SerializeRootSignature(&RsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSerializedRootSig, &pErrorBlob)))
+		return E_FAIL;
+	if (FAILED(m_pDevice->CreateRootSignature(0,
+		pSerializedRootSig->GetBufferPointer(), pSerializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(&m_pRootSignature))))
+		return E_FAIL;
+
+	//FLAGJK Shaders
+
+	D3D12_INPUT_ELEMENT_DESC IeDescs[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXINDEX", 0, DXGI_FORMAT_R16_UINT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+
+	//D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
+	//FLAGJK
 
 	return S_OK;
 }
