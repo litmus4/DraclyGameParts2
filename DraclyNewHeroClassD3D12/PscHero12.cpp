@@ -77,11 +77,19 @@ HRESULT PscHero12::Load()
 	//”“√Ê
 	INDEX_RECT(vecIndices, 20, 21, 22, 20, 22, 23);
 
+	std::vector<std::wstring> vecTexFiles;
+	vecTexFiles.push_back(L"fore.dds");
+	vecTexFiles.push_back(L"top.dds");
+	vecTexFiles.push_back(L"back.dds");
+	vecTexFiles.push_back(L"bottom.dds");
+	vecTexFiles.push_back(L"left.dds");
+	vecTexFiles.push_back(L"right.dds");
+
 	std::vector<UINT16> vecMultiTexVerts;
 	for (int i = 0; i < 6; ++i)
 		vecMultiTexVerts.push_back(4);
 
-	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, &vecMultiTexVerts)))
+	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, vecTexFiles, &vecMultiTexVerts)))
 		return E_FAIL;
 
 	return S_OK;

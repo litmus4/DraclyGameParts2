@@ -5,7 +5,7 @@
 #define VIEW_WIDTH 1280
 #define VIEW_HEIGHT 720
 
-enum ECbvSrvRange
+enum ESimpleRange
 {
 	Cbv,
 	Srv,
@@ -234,7 +234,7 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 }
 
 HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
-	const std::vector<UINT16>* pvecMultiTexVerts, bool bTiangleStrip)
+	const std::vector<std::wstring>& vecTexFiles, const std::vector<UINT16>* pvecMultiTexVerts, bool bTiangleStrip)
 {
 	if (vecVertices.empty() || vecIndices.empty())
 		return E_FAIL;
@@ -245,6 +245,8 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 		for (; itMtv != pvecMultiTexVerts->end(); itMtv++)
 			uSum += *itMtv;
 		if (uSum != vecVertices.size())
+			return E_FAIL;
+		if (pvecMultiTexVerts->size() > vecTexFiles.size())
 			return E_FAIL;
 	}
 
@@ -329,10 +331,10 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 
 	CD3DX12_ROOT_PARAMETER RootParameters[1];
 
-	CD3DX12_DESCRIPTOR_RANGE CbvSrvRanges[ECbvSrvRange::Max];
-	CbvSrvRanges[ECbvSrvRange::Cbv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	CbvSrvRanges[ECbvSrvRange::Srv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0);
-	RootParameters[0].InitAsDescriptorTable(2, CbvSrvRanges);
+	CD3DX12_DESCRIPTOR_RANGE SimpleRanges[ESimpleRange::Max];
+	SimpleRanges[ESimpleRange::Cbv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	SimpleRanges[ESimpleRange::Srv].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, vecTexFiles.size(), 0);
+	RootParameters[0].InitAsDescriptorTable(2, SimpleRanges);
 
 	CD3DX12_ROOT_SIGNATURE_DESC RsDesc(1, RootParameters, 0, nullptr,
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);

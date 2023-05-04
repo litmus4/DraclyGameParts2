@@ -6,6 +6,7 @@
 //#include "d3dx12.h"
 #include "DirectXMath.h"
 #include <vector>
+#include <string>
 
 #define INDEX_RECT(Vec, I1, I2, I3, I4, I5, I6) Vec.push_back(I1);\
 	Vec.push_back(I2);\
@@ -42,6 +43,7 @@ public:
 
 	HRESULT InitPipeline(HWND hWnd);
 	HRESULT LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
+		const std::vector<std::wstring>& vecTexFiles,
 		const std::vector<UINT16>* pvecMultiTexVerts = nullptr, bool bTiangleStrip = false);
 
 private:
