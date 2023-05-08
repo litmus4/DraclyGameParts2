@@ -47,6 +47,24 @@ public:
 		const std::vector<UINT16>* pvecMultiTexVerts = nullptr, bool bTiangleStrip = false);
 
 private:
+	struct SShaderBlobGroup
+	{
+		ComPtr<ID3DBlob> pVertexShader;
+		ComPtr<ID3DBlob> pErrorVS;
+		ComPtr<ID3DBlob> pHullShader;
+		ComPtr<ID3DBlob> pErrorHS;
+		ComPtr<ID3DBlob> pDomainShader;
+		ComPtr<ID3DBlob> pErrorDS;
+		ComPtr<ID3DBlob> pGeometryShader;
+		ComPtr<ID3DBlob> pErrorGS;
+		ComPtr<ID3DBlob> pPixelShader;
+		ComPtr<ID3DBlob> pErrorPS;
+	};
+
+private:
+	HRESULT CompileShaders(LPCWSTR wszFile,
+		LPCSTR szVSEntry, LPCSTR szHSEntry, LPCSTR szDSEntry, LPCSTR szGSEntry, LPCSTR szPSEntry);
+
 	ComPtr<ID3D12Device> m_pDevice;
 	ComPtr<IDXGISwapChain3> m_pSwapChain;
 	ComPtr<ID3D12CommandQueue> m_pCommandQueue;
@@ -62,6 +80,7 @@ private:
 	ComPtr<ID3D12Resource> m_pVertexBuffer;
 	ComPtr<ID3D12Resource> m_pIndexBuffer;
 	ComPtr<ID3D12RootSignature> m_pRootSignature;
+	SShaderBlobGroup m_Shaders;
 	UINT m_uCbvSrvDescriptorSize;
 
 	UINT m_uFrameIndex;

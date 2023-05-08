@@ -39,4 +39,9 @@
       <Filter>D3D12Ext</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="PBRShaders.hlsl">
+      <Filter>资源文件</Filter>
+    </FxCompile>
+  </ItemGroup>
 </Project>

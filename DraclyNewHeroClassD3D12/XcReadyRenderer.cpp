@@ -1,5 +1,6 @@
 #include "XcReadyRenderer.h"
 #include "d3dx12.h"
+#include "d3dcompiler.h"
 #include <string>
 
 #define VIEW_WIDTH 1280
@@ -34,6 +35,7 @@ XcReadyRenderer::SVertex::SVertex(float fX, float fY, float fZ,
 XcReadyRenderer::XcReadyRenderer()
 	: m_uRtvDescriptorSize(0)
 	, m_uDsvDescriptorSize(0)
+	, m_uCbvSrvDescriptorSize(0)
 	, m_uFrameIndex(0)
 {
 	//
@@ -340,15 +342,16 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> pSerializedRootSig;
-	ComPtr<ID3DBlob> pErrorBlob;
-	if (FAILED(D3D12SerializeRootSignature(&RsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSerializedRootSig, &pErrorBlob)))
+	ComPtr<ID3DBlob> pErrorSigBlob;
+	if (FAILED(D3D12SerializeRootSignature(&RsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSerializedRootSig, &pErrorSigBlob)))
 		return E_FAIL;
 	if (FAILED(m_pDevice->CreateRootSignature(0,
 		pSerializedRootSig->GetBufferPointer(), pSerializedRootSig->GetBufferSize(),
 		IID_PPV_ARGS(&m_pRootSignature))))
 		return E_FAIL;
 
-	//FLAGJK Shaders
+	if (FAILED(CompileShaders(L"PBRShaders.hlsl"/*¡Ÿ ±√˚*/, "VSMain", nullptr, nullptr, nullptr, "PSMain")))
+		return E_FAIL;
 
 	D3D12_INPUT_ELEMENT_DESC IeDescs[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -361,4 +364,82 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 	//FLAGJK
 
 	return S_OK;
+}
+
+HRESULT XcReadyRenderer::CompileShaders(LPCWSTR wszFile,
+	LPCSTR szVSEntry, LPCSTR szHSEntry, LPCSTR szDSEntry, LPCSTR szGSEntry, LPCSTR szPSEntry)
+{
+#ifdef _DEBUG
+	UINT uCompileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+	UINT uCompileFlags = 0;
+#endif
+	HRESULT hr = S_OK;
+
+	if (szVSEntry)
+	{
+		hr = D3DCompileFromFile(wszFile, nullptr, nullptr, szVSEntry, "vs_5_0", uCompileFlags, 0,
+			&m_Shaders.pVertexShader, &m_Shaders.pErrorVS);
+		if (m_Shaders.pErrorVS != nullptr)
+		{
+#ifdef _DEBUG
+			OutputDebugStringA((char*)m_Shaders.pErrorVS->GetBufferPointer());
+#endif
+			return E_FAIL;
+		}
+	}
+
+	if (szHSEntry)
+	{
+		hr = D3DCompileFromFile(wszFile, nullptr, nullptr, szHSEntry, "hs_5_0", uCompileFlags, 0,
+			&m_Shaders.pHullShader, &m_Shaders.pErrorHS);
+		if (m_Shaders.pErrorHS != nullptr)
+		{
+#ifdef _DEBUG
+			OutputDebugStringA((char*)m_Shaders.pErrorHS->GetBufferPointer());
+#endif
+			return E_FAIL;
+		}
+	}
+
+	if (szDSEntry)
+	{
+		hr = D3DCompileFromFile(wszFile, nullptr, nullptr, szDSEntry, "ds_5_0", uCompileFlags, 0,
+			&m_Shaders.pDomainShader, &m_Shaders.pErrorDS);
+		if (m_Shaders.pErrorDS != nullptr)
+		{
+#ifdef _DEBUG
+			OutputDebugStringA((char*)m_Shaders.pErrorDS->GetBufferPointer());
+#endif
+			return E_FAIL;
+		}
+	}
+
+	if (szGSEntry)
+	{
+		hr = D3DCompileFromFile(wszFile, nullptr, nullptr, szGSEntry, "gs_5_0", uCompileFlags, 0,
+			&m_Shaders.pGeometryShader, &m_Shaders.pErrorGS);
+		if (m_Shaders.pErrorGS != nullptr)
+		{
+#ifdef _DEBUG
+			OutputDebugStringA((char*)m_Shaders.pErrorGS->GetBufferPointer());
+#endif
+			return E_FAIL;
+		}
+	}
+
+	if (szPSEntry)
+	{
+		hr = D3DCompileFromFile(wszFile, nullptr, nullptr, szPSEntry, "ps_5_0", uCompileFlags, 0,
+			&m_Shaders.pPixelShader, &m_Shaders.pErrorPS);
+		if (m_Shaders.pErrorPS != nullptr)
+		{
+#ifdef _DEBUG
+			OutputDebugStringA((char*)m_Shaders.pErrorPS->GetBufferPointer());
+#endif
+			return E_FAIL;
+		}
+	}
+
+	return hr;
 }
