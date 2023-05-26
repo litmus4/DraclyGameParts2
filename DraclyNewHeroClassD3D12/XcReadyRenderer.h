@@ -65,6 +65,10 @@ private:
 	HRESULT CompileShaders(LPCWSTR wszFile,
 		LPCSTR szVSEntry, LPCSTR szHSEntry, LPCSTR szDSEntry, LPCSTR szGSEntry, LPCSTR szPSEntry);
 
+#if MSAA
+	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS m_FdMsaaQ = {};
+#endif
+
 	ComPtr<ID3D12Device> m_pDevice;
 	ComPtr<IDXGISwapChain3> m_pSwapChain;
 	ComPtr<ID3D12CommandQueue> m_pCommandQueue;
@@ -81,6 +85,7 @@ private:
 	ComPtr<ID3D12Resource> m_pIndexBuffer;
 	ComPtr<ID3D12RootSignature> m_pRootSignature;
 	SShaderBlobGroup m_Shaders;
+	ComPtr<ID3D12PipelineState> m_pPSO;
 	UINT m_uCbvSrvDescriptorSize;
 
 	UINT m_uFrameIndex;

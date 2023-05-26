@@ -125,12 +125,11 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 		return E_FAIL;
 
 #if MSAA
-	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS FdMsaaQ;
-	FdMsaaQ.Format = dMDesc.Format;
-	FdMsaaQ.SampleCount = 4;
-	FdMsaaQ.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
-	FdMsaaQ.NumQualityLevels = 0;
-	if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &FdMsaaQ, sizeof(FdMsaaQ))))
+	m_FdMsaaQ.Format = dMDesc.Format;
+	m_FdMsaaQ.SampleCount = 4;
+	m_FdMsaaQ.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+	m_FdMsaaQ.NumQualityLevels = 0;
+	if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &m_FdMsaaQ, sizeof(m_FdMsaaQ))))
 		return E_FAIL;
 #endif
 
@@ -142,8 +141,8 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	//ScDesc.BufferDesc.RefreshRate.Denominator = 1;
 	//ScDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 #if MSAA
-	ScDesc.SampleDesc.Count = (FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
-	ScDesc.SampleDesc.Quality = (FdMsaaQ.NumQualityLevels > 0 ? FdMsaaQ.NumQualityLevels - 1 : 0);
+	ScDesc.SampleDesc.Count = (m_FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
+	ScDesc.SampleDesc.Quality = (m_FdMsaaQ.NumQualityLevels > 0 ? m_FdMsaaQ.NumQualityLevels - 1 : 0);
 #else
 	ScDesc.SampleDesc.Count = 1;
 	ScDesc.SampleDesc.Quality = 0;
@@ -201,8 +200,8 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 	DsDesc.MipLevels = 1;
 	DsDesc.Format = eDepthStencilFormat;
 #if MSAA
-	DsDesc.SampleDesc.Count = (FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
-	DsDesc.SampleDesc.Quality = (FdMsaaQ.NumQualityLevels > 0 ? FdMsaaQ.NumQualityLevels - 1 : 0);
+	DsDesc.SampleDesc.Count = (m_FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
+	DsDesc.SampleDesc.Quality = (m_FdMsaaQ.NumQualityLevels > 0 ? m_FdMsaaQ.NumQualityLevels - 1 : 0);
 #else
 	DsDesc.SampleDesc.Count = 1;
 	DsDesc.SampleDesc.Quality = 0;
@@ -353,6 +352,18 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 	if (FAILED(CompileShaders(L"PBRShaders.hlsl"/*¡Ÿ ±√˚*/, "VSMain", nullptr, nullptr, nullptr, "PSMain")))
 		return E_FAIL;
 
+	D3D12_RENDER_TARGET_BLEND_DESC RtBlendDesc;
+	RtBlendDesc.BlendEnable = true;
+	RtBlendDesc.LogicOpEnable = false;
+	RtBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	RtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	RtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	RtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	RtBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	RtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	RtBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	RtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
 	D3D12_INPUT_ELEMENT_DESC IeDescs[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -360,7 +371,39 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 		{"TEXINDEX", 0, DXGI_FORMAT_R16_UINT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 
-	//D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PsoDesc = {};
+	PsoDesc.pRootSignature = m_pRootSignature.Get();
+	PsoDesc.VS = { reinterpret_cast<BYTE*>(m_Shaders.pVertexShader->GetBufferPointer()), m_Shaders.pVertexShader->GetBufferSize() };
+	//PsoDesc.HS = {};
+	//PsoDesc.DS = {};
+	//PsoDesc.GS = {};
+	PsoDesc.PS = { reinterpret_cast<BYTE*>(m_Shaders.pPixelShader->GetBufferPointer()), m_Shaders.pPixelShader->GetBufferSize() };
+	PsoDesc.BlendState.AlphaToCoverageEnable = false;
+	PsoDesc.BlendState.IndependentBlendEnable = false;
+	for (i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+		PsoDesc.BlendState.RenderTarget[i] = RtBlendDesc;
+	PsoDesc.SampleMask = UINT_MAX;
+	PsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	PsoDesc.DepthStencilState.DepthEnable = true;
+	PsoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	PsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	PsoDesc.DepthStencilState.StencilEnable = false;
+	PsoDesc.InputLayout = { IeDescs, _countof(IeDescs) };
+	PsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	PsoDesc.NumRenderTargets = 1;
+	PsoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	PsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+#if MSAA
+	PsoDesc.SampleDesc.Count = (m_FdMsaaQ.NumQualityLevels > 0 ? 4 : 1);
+	PsoDesc.SampleDesc.Quality = (m_FdMsaaQ.NumQualityLevels > 0 ? m_FdMsaaQ.NumQualityLevels - 1 : 0);
+#else
+	PsoDesc.SampleDesc.Count = 1;
+	PsoDesc.SampleDesc.Quality = 0;
+#endif
+	
+	if (FAILED(m_pDevice->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&m_pPSO))))
+		return E_FAIL;
+
 	//FLAGJK
 
 	return S_OK;
