@@ -38,7 +38,8 @@ XcReadyRenderer::XcReadyRenderer()
 	, m_uCbvSrvDescriptorSize(0)
 	, m_uFrameIndex(0)
 {
-	//
+	for (UINT u = 0; u < FRAME_COUNT; ++u)
+		m_bDsvResStateInited[u] = false;
 }
 
 XcReadyRenderer::~XcReadyRenderer()
@@ -404,6 +405,21 @@ HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, con
 	if (FAILED(m_pDevice->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&m_pPSO))))
 		return E_FAIL;
 
+	if (FAILED(m_pDevice->CreateCommandList(0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		m_pCommandAllocators[m_uFrameIndex].Get(),
+		m_pPSO.Get(),
+		IID_PPV_ARGS(&m_pCommandList))))
+		return E_FAIL;
+
+	CD3DX12_RESOURCE_BARRIER&& Barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_pDepthStencils[m_uFrameIndex].Get(),
+		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	m_pCommandList->ResourceBarrier(1, &Barrier);
+	m_bDsvResStateInited[m_uFrameIndex] = true;
+
+	if (FAILED(m_pCommandList->Close()))
+		return E_FAIL;
+
 	//FLAGJK
 
 	return S_OK;
@@ -485,4 +501,16 @@ HRESULT XcReadyRenderer::CompileShaders(LPCWSTR wszFile,
 	}
 
 	return hr;
+}
+
+UINT XcReadyRenderer::CalcConstantBufferByteSize(UINT uByteSize)
+{
+	// Example: Suppose byteSize = 300.
+	// (300 + 255) & ~255
+	// 555 & ~255
+	// 0x022B & ~0x00ff
+	// 0x022B & 0xff00
+	// 0x0200
+	// 512
+	return (uByteSize + 255) & ~255;
 }

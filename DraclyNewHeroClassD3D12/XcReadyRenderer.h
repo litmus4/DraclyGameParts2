@@ -64,6 +64,7 @@ private:
 private:
 	HRESULT CompileShaders(LPCWSTR wszFile,
 		LPCSTR szVSEntry, LPCSTR szHSEntry, LPCSTR szDSEntry, LPCSTR szGSEntry, LPCSTR szPSEntry);
+	UINT CalcConstantBufferByteSize(UINT uByteSize);
 
 #if MSAA
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS m_FdMsaaQ = {};
@@ -80,6 +81,7 @@ private:
 	ComPtr<ID3D12Resource> m_pDepthStencils[FRAME_COUNT];
 	ComPtr<ID3D12DescriptorHeap> m_pDsvHeap;
 	UINT m_uDsvDescriptorSize;
+	bool m_bDsvResStateInited[FRAME_COUNT];
 
 	ComPtr<ID3D12Resource> m_pVertexBuffer;
 	ComPtr<ID3D12Resource> m_pIndexBuffer;

@@ -5,9 +5,9 @@ PscHero12::PscHero12()
 	: m_pRenderer(nullptr)
 	//, m_fYaw(0.0f), m_fPitch(0.0f), m_fRoll(0.0f)
 {
-	XMFLOAT3 v3Front(0.0f, 0.0f, -1.0f);
+	XMFLOAT3 v3Front(0.0f, 0.0f, 1.0f);
 	m_vFront = DirectX::XMLoadFloat3(&v3Front);
-	XMFLOAT3 v3Right(-1.0f, 0.0f, 0.0f);
+	XMFLOAT3 v3Right(1.0f, 0.0f, 0.0f);
 	m_vRight = DirectX::XMLoadFloat3(&v3Right);
 }
 
