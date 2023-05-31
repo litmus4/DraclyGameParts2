@@ -89,7 +89,11 @@ HRESULT PscHero12::Load()
 	for (int i = 0; i < 6; ++i)
 		vecMultiTexVerts.push_back(4);
 
-	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, vecTexFiles, &vecMultiTexVerts)))
+	XMMATRIX&& matWorld = CalcWorldMatrix();
+	XcReadyRenderer::SConstantParam ConstantParam(matWorld,
+		XMFLOAT3(0.0f, 0.0f, -5.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f));
+
+	if (FAILED(m_pRenderer->LoadAssets(vecVertices, vecIndices, vecTexFiles, ConstantParam, &vecMultiTexVerts)))
 		return E_FAIL;
 
 	return S_OK;
@@ -111,19 +115,7 @@ void PscHero12::Update()
 	RotateVector3(m_vRight, vAxisX, fRotX);
 	RotateVector3(m_vRight, vAxisY, fRotY);
 	RotateVector3(m_vRight, vAxisZ, fRotZ);
-	
-	XMVECTOR&& vUp = DirectX::XMVector3Cross(m_vFront, m_vRight);
-	m_vFront = DirectX::XMVector3Normalize(m_vFront);
-	m_vRight = DirectX::XMVector3Normalize(m_vRight);
-	vUp = DirectX::XMVector3Normalize(vUp);
-	if (fabs(DirectX::XMVector3Dot(m_vFront, m_vRight).m128_f32[0]) > 0.000001f)
-		m_vRight = DirectX::XMVector3Cross(vUp, m_vFront);
-	XMMATRIX&& matWorld = XMMatrixSet(
-		DirectX::XMVectorGetX(m_vRight), DirectX::XMVectorGetY(m_vRight), DirectX::XMVectorGetZ(m_vRight), 0.0f,
-		DirectX::XMVectorGetX(vUp), DirectX::XMVectorGetY(vUp), DirectX::XMVectorGetZ(vUp), 0.0f,
-		DirectX::XMVectorGetX(m_vFront), DirectX::XMVectorGetY(m_vFront), DirectX::XMVectorGetZ(m_vFront), 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
+	XMMATRIX&& matWorld = CalcWorldMatrix();
 }
 
 HRESULT PscHero12::Render()
@@ -157,4 +149,20 @@ void PscHero12::RotateVector3(XMVECTOR& v, const XMVECTOR& vAxis, float fAngle)
 	if (fabs(fAngle) < 0.000001f)
 		return;
 	v = DirectX::XMVector3Rotate(v, DirectX::XMQuaternionRotationAxis(vAxis, fAngle));
+}
+
+XMMATRIX PscHero12::CalcWorldMatrix()
+{
+	XMVECTOR&& vUp = DirectX::XMVector3Cross(m_vFront, m_vRight);
+	m_vFront = DirectX::XMVector3Normalize(m_vFront);
+	m_vRight = DirectX::XMVector3Normalize(m_vRight);
+	vUp = DirectX::XMVector3Normalize(vUp);
+	if (fabs(DirectX::XMVector3Dot(m_vFront, m_vRight).m128_f32[0]) > 0.000001f)
+		m_vRight = DirectX::XMVector3Cross(vUp, m_vFront);
+	return XMMatrixSet(
+		DirectX::XMVectorGetX(m_vRight), DirectX::XMVectorGetY(m_vRight), DirectX::XMVectorGetZ(m_vRight), 0.0f,
+		DirectX::XMVectorGetX(vUp), DirectX::XMVectorGetY(vUp), DirectX::XMVectorGetZ(vUp), 0.0f,
+		DirectX::XMVectorGetX(m_vFront), DirectX::XMVectorGetY(m_vFront), DirectX::XMVectorGetZ(m_vFront), 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
 }

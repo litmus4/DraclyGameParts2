@@ -25,6 +25,7 @@ public:
 
 private:
 	void RotateVector3(XMVECTOR& v, const XMVECTOR& vAxis, float fAngle);
+	XMMATRIX CalcWorldMatrix();
 
 	//äÖÈ¾Æ÷
 	XcReadyRenderer* m_pRenderer;

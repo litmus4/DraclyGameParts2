@@ -37,13 +37,31 @@ public:
 		UINT16 uTexIndex;
 	};
 
+	struct SConstantParam
+	{
+		SConstantParam();
+		SConstantParam(const XMMATRIX& xWorld,
+			const XMFLOAT3& xEye, const XMFLOAT3& xLookAt, const XMFLOAT3& xRight);
+
+		XMMATRIX matWorld;
+		XMFLOAT3 v3Eye;
+		XMFLOAT3 v3LookAt;
+		XMFLOAT3 v3Right;
+	};
+	struct SConstants
+	{
+		XMMATRIX matWorldViewProj;
+		XMMATRIX matWorld;
+		XMFLOAT3 v3Eye;
+	};
+
 public:
 	XcReadyRenderer();
 	~XcReadyRenderer();
 
 	HRESULT InitPipeline(HWND hWnd);
 	HRESULT LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
-		const std::vector<std::wstring>& vecTexFiles,
+		const std::vector<std::wstring>& vecTexFiles, const SConstantParam& ConstantParam,
 		const std::vector<UINT16>* pvecMultiTexVerts = nullptr, bool bTiangleStrip = false);
 
 private:
@@ -88,6 +106,7 @@ private:
 	ComPtr<ID3D12RootSignature> m_pRootSignature;
 	SShaderBlobGroup m_Shaders;
 	ComPtr<ID3D12PipelineState> m_pPSO;
+	SConstants m_Constants;
 	UINT m_uCbvSrvDescriptorSize;
 
 	UINT m_uFrameIndex;

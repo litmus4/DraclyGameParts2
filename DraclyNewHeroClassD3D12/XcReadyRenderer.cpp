@@ -32,6 +32,19 @@ XcReadyRenderer::SVertex::SVertex(float fX, float fY, float fZ,
 	v2Texcoord.y = fV;
 }
 
+XcReadyRenderer::SConstantParam::SConstantParam()
+{
+	//
+}
+
+XcReadyRenderer::SConstantParam::SConstantParam(const XMMATRIX& xWorld,
+	const XMFLOAT3& xEye, const XMFLOAT3& xLookAt, const XMFLOAT3& xRight)
+	: matWorld(xWorld)
+	, v3Eye(xEye), v3LookAt(xLookAt), v3Right(xRight)
+{
+	//
+}
+
 XcReadyRenderer::XcReadyRenderer()
 	: m_uRtvDescriptorSize(0)
 	, m_uDsvDescriptorSize(0)
@@ -236,7 +249,8 @@ HRESULT XcReadyRenderer::InitPipeline(HWND hWnd)
 }
 
 HRESULT XcReadyRenderer::LoadAssets(const std::vector<SVertex>& vecVertices, const std::vector<UINT16>& vecIndices,
-	const std::vector<std::wstring>& vecTexFiles, const std::vector<UINT16>* pvecMultiTexVerts, bool bTiangleStrip)
+	const std::vector<std::wstring>& vecTexFiles, const SConstantParam& ConstantParam,
+	const std::vector<UINT16>* pvecMultiTexVerts, bool bTiangleStrip)
 {
 	if (vecVertices.empty() || vecIndices.empty())
 		return E_FAIL;
